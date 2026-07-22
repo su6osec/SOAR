@@ -1,0 +1,29 @@
+# Terraform state & secrets — NEVER commit these
+terraform.tfstate
+terraform.tfstate.backup
+terraform.tfvars
+.terraform/
+.terraform.lock.hcl
+*.tfplan
+lambda_payload.zip
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.venv/
+venv/
+dist/
+*.egg-info/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

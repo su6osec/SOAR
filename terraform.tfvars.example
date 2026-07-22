@@ -1,0 +1,35 @@
+# =============================================================================
+# terraform.tfvars.example — SOAR Lab
+# =============================================================================
+# Copy this file to terraform.tfvars and fill in your real values.
+# NEVER commit terraform.tfvars to source control — it contains secrets.
+#
+# Usage:
+#   cp terraform.tfvars.example terraform.tfvars
+#   # Edit terraform.tfvars with real values
+#   terraform plan
+# =============================================================================
+
+# AWS region for all resources
+aws_region = "us-east-1"
+
+# Project naming (used as a prefix for all resource names)
+project_name = "soar-lab"
+environment  = "dev"
+owner        = "Deepanshu Chauhan"
+
+# GuardDuty finding publication frequency
+# Options: FIFTEEN_MINUTES | ONE_HOUR | SIX_HOURS
+guardduty_finding_frequency     = "FIFTEEN_MINUTES"
+guardduty_s3_protection_enabled = true
+
+# GuardDuty finding type that triggers the remediation Lambda
+target_finding_type = "UnauthorizedAccess:IAMUser/AccessKeyLeak"
+
+# Lambda sizing
+lambda_timeout            = 60
+lambda_memory             = 256
+lambda_runtime            = "python3.12"
+lambda_log_retention_days = 30
+
+
