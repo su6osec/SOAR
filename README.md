@@ -6,22 +6,39 @@
 [![MITRE ATT&CK](https://img.shields.io/badge/MITRE%20ATT%26CK-T1078%20%7C%20T1530-red)](https://attack.mitre.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
+<br>
+
 <div style="text-align: justify;">
 This project is an enterprise-grade, serverless Security Orchestration, Automation, and Response (SOAR) pipeline deployed entirely on AWS. It demonstrates a complete, real-world incident response workflow: from the initial detection of compromised cloud credentials to the instantaneous containment of the threat. Built using Infrastructure as Code (Terraform) and serverless compute (AWS Lambda), this architecture autonomously identifies compromised IAM credentials via GuardDuty, routes the alert via EventBridge, and isolates the threat by freezing the compromised principal in under five seconds—achieving zero-trust containment without human intervention.
 </div>
 
+<br>
+
 ---
 
-### System Architecture
+## Table of Contents
+- [System Architecture](#system-architecture)
+- [Data Flow and Execution Summary](#data-flow-and-execution-summary)
+- [MITRE ATT&CK Cloud Mapping](#mitre-attck-cloud-mapping)
+- [Deployment Instructions](#deployment-instructions)
+- [Testing and Simulation](#testing-and-simulation)
+- [Incident Response Playbook](#incident-response-playbook)
+- [Security Controls Implemented](#security-controls-implemented)
+
+---
+
+<br>
+
+## System Architecture
 
 ![SOAR Architecture Diagram](assets/architecture_wide.png)
 
-<br />
+<br>
 
 ## Data Flow and Execution Summary
 
-| Step | Action | AWS Technology |
-|:----:|:-------|:---------------|
+| Sequence | Detection & Response Action | AWS Service |
+|:---:|:---|:---|
 | **1** | A threat is detected, such as leaked IAM credentials being used from an unauthorized IP address. | **AWS GuardDuty** |
 | **2** | GuardDuty generates a security finding and publishes it to the default event bus. | **GuardDuty → EventBridge** |
 | **3** | A custom rule matches the specific payload: `detail.type = UnauthorizedAccess:IAMUser/AccessKeyLeak`. | **EventBridge Rule** |
@@ -30,17 +47,15 @@ This project is an enterprise-grade, serverless Security Orchestration, Automati
 | **6** | The script attaches a custom `ExplicitDenyAll` inline policy to the IAM user to block all further access. | **Lambda → IAM API** |
 | **7** | A structured JSON audit log containing the masked key and action status is recorded for compliance. | **Lambda → CloudWatch Logs** |
 
----
+<br>
 
 ## MITRE ATT&CK Cloud Mapping
 
-<div style="text-align: justify;">
 This architecture is engineered to detect and mitigate specific techniques documented in the MITRE ATT&CK framework for Cloud infrastructure.
-</div>
-<br />
 
 <details>
 <summary><b>T1078.004 — Valid Accounts: Cloud Accounts</b></summary>
+<br>
 
 - **Tactic**: Initial Access, Persistence, Privilege Escalation, Defense Evasion
 - **Description**: Adversaries obtain and abuse credentials of cloud accounts to gain initial access or maintain persistence. Compromised IAM Access Keys allow attackers to authenticate as a legitimate user, bypassing network controls.
@@ -50,6 +65,7 @@ This architecture is engineered to detect and mitigate specific techniques docum
 
 <details>
 <summary><b>T1530 — Data from Cloud Storage Object</b></summary>
+<br>
 
 - **Tactic**: Collection
 - **Description**: Adversaries access data from cloud storage (S3) using compromised credentials. With a leaked IAM key, an attacker can enumerate and download S3 buckets before defenders traditionally respond.
@@ -59,6 +75,7 @@ This architecture is engineered to detect and mitigate specific techniques docum
 
 <details>
 <summary><b>T1580 — Cloud Infrastructure Discovery</b></summary>
+<br>
 
 - **Tactic**: Discovery
 - **Description**: Adversaries attempt to discover cloud infrastructure (EC2, Lambda, RDS) after gaining initial access with compromised credentials.
@@ -66,42 +83,27 @@ This architecture is engineered to detect and mitigate specific techniques docum
 - **Automated Response**: The automated user freeze drops all discovery API permissions simultaneously.
 </details>
 
----
-
-## Project Structure
-
-```text
-SOAR/
-├── main.tf                    # Core Terraform module defining AWS resources
-├── variables.tf               # Parameterized input variables for deployment
-├── outputs.tf                 # Essential resource ARNs exposed post-deployment
-├── terraform.tfvars.example   # Safe-to-commit template for local variable definitions
-├── src/
-│   └── remediate.py           # Core Python/Boto3 Lambda remediation logic
-└── README.md                  # Project documentation
-```
-
----
+<br>
 
 ## Deployment Instructions
 
 <details>
-<summary><b>View Deployment Steps</b></summary>
+<summary><b>View Infrastructure Deployment Steps</b></summary>
+<br>
 
 ### Prerequisites
 
 | Tool | Version | Purpose |
-|------|---------|---------|
-| Terraform | ≥ 1.6.0 | Infrastructure provisioning |
-| AWS CLI | ≥ 2.x | Cloud authentication and testing |
-| Python | ≥ 3.10 | Lambda runtime environment |
-| Stratus Red Team | Latest | Adversary simulation and testing |
+|---|---|---|
+| **Terraform** | ≥ 1.6.0 | Infrastructure provisioning |
+| **AWS CLI** | ≥ 2.x | Cloud authentication and testing |
+| **Python** | ≥ 3.10 | Lambda runtime environment |
+| **Stratus Red Team** | Latest | Adversary simulation and testing |
 
 ### Step 1 — Configure AWS Authentication
 
 ```bash
 aws configure
-# Verify active authentication context:
 aws sts get-caller-identity
 ```
 
@@ -122,20 +124,20 @@ terraform init
 terraform apply
 ```
 
-Review the plan and type `yes` when prompted. Typical deployment time is under 60 seconds.
+> [!TIP]
+> Review the Terraform plan carefully. Type `yes` when prompted. Typical deployment time is under 60 seconds.
+
 </details>
 
----
+<br>
 
 ## Testing and Simulation
 
-<div style="text-align: justify;">
 To validate the pipeline, we utilize Stratus Red Team, an open-source adversary simulation tool developed by Datadog Security Labs. This tool safely detonates cloud attack techniques to trigger GuardDuty.
-</div>
-<br />
 
 <details>
 <summary><b>View Testing Procedures</b></summary>
+<br>
 
 ### Option A — Live Simulation (Recommended)
 
@@ -147,7 +149,8 @@ stratus warmup aws.credential-access.access-key-leak
 stratus detonate aws.credential-access.access-key-leak
 ```
 
-**Note**: `stratus detonate` generates a functional IAM user and access key within your account. GuardDuty will detect this generated leak within its aggregation window. The Lambda function will subsequently capture the event, deactivate the key, and lock out the user.
+> [!WARNING]
+> `stratus detonate` generates a functional IAM user and access key within your account. GuardDuty will detect this generated leak within its aggregation window. The Lambda function will subsequently capture the event, deactivate the key, and lock out the user.
 
 After detonation, verify the automated remediation:
 
@@ -200,20 +203,21 @@ aws lambda invoke \
 ```
 </details>
 
----
+<br>
 
 ## Incident Response Playbook
 
 <details>
 <summary><b>View Analyst Workflow</b></summary>
+<br>
 
 ### Automated Phase (Executes in < 5 seconds)
 
 | Action | API Call Executed | Technical Outcome |
-|--------|-------------------|-------------------|
-| Deactivate Key | `iam:UpdateAccessKey(Status=Inactive)` | The compromised key is immediately invalidated for all subsequent API requests. |
-| Freeze Principal | `iam:PutUserPolicy(ExplicitDenyAll)` | An inline policy explicitly denying all actions (`"Action": "*"`) is attached to the user. |
-| Audit Logging | `logs:PutLogEvents` | A structured JSON record detailing the remediation status is securely stored in CloudWatch. |
+|---|---|---|
+| **Deactivate Key** | `iam:UpdateAccessKey` | The compromised key is immediately invalidated for all subsequent API requests. |
+| **Freeze Principal** | `iam:PutUserPolicy` | An inline policy explicitly denying all actions (`"Action": "*"`) is attached to the user. |
+| **Audit Logging** | `logs:PutLogEvents` | A structured JSON record detailing the remediation status is securely stored in CloudWatch. |
 
 ### Human Analyst Phase (Post-Automation)
 
@@ -229,32 +233,26 @@ aws lambda invoke \
 - Enforce stricter Service Control Policies (SCPs) to mitigate future exposure risks, such as requiring MFA for all IAM actions.
 </details>
 
----
+<br>
 
 ## Security Controls Implemented
 
 | Domain | Implementation Strategy | Framework Alignment |
-|--------|-------------------------|---------------------|
+|---|---|---|
 | **Threat Detection** | Continuous monitoring via GuardDuty, spanning CloudTrail, VPC Flow Logs, and S3 Data Events. | CIS AWS Foundations |
 | **Automated Response** | EventBridge routing to Lambda for sub-minute Mean Time To Respond (MTTR). | NIST CSF (RS.RP) |
 | **Least Privilege** | Lambda execution role is strictly scoped to 4 highly specific IAM and CloudWatch API actions. | CIS IAM 1.x |
 | **Log Integrity** | CloudWatch Logs configured with a 30-day retention policy for forensic availability. | CIS AWS 3.10 |
 | **Non-repudiation** | Emitted logs contain the finding ID alongside masked identifiers, ensuring robust audit trails. | SOC 2 (CC7.2) |
 
+<br>
+
 ---
 
-<br />
+> [!NOTE]  
+> **Infrastructure Cleanup**: To avoid ongoing AWS charges in your development environment, run `terraform destroy` when testing is complete. Estimated cost for a sandbox account is < $15/month.
 
-## Infrastructure Cleanup
-
-```bash
-# Teardown all AWS resources provisioned by Terraform
-terraform destroy
-```
-
-<br/>
-<br/>
+<br>
 
 *Developed as a Security Engineering Portfolio Demonstration*  
-**Core Technologies:** Infrastructure-as-Code (Terraform), Python, AWS Serverless Ecosystem
-
+**Core Technologies**: Infrastructure-as-Code (Terraform), Python, AWS Serverless Ecosystem
