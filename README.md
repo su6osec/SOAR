@@ -1,4 +1,4 @@
-# ☁️ Cloud Threat Detection & Incident Response — SOAR Lab
+# Cloud Threat Detection & Incident Response — SOAR Lab
 
 [![Terraform](https://img.shields.io/badge/Terraform-≥1.6-7B42BC?logo=terraform&logoColor=white)](https://www.terraform.io/)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
@@ -10,7 +10,7 @@
 
 ---
 
-## 📐 System Architecture
+## System Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -64,7 +64,7 @@
 
 ---
 
-## 🎯 MITRE ATT&CK Cloud Mapping
+## MITRE ATT&CK Cloud Mapping
 
 This lab detects and responds to the following ATT&CK techniques:
 
@@ -88,7 +88,7 @@ This lab detects and responds to the following ATT&CK techniques:
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 SOAR/
@@ -103,7 +103,7 @@ SOAR/
 
 ---
 
-## ✅ Prerequisites
+## Prerequisites
 
 | Tool | Version | Install |
 |------|---------|---------|
@@ -130,7 +130,7 @@ logs:PutRetentionPolicy
 
 ---
 
-## 🚀 Deployment Instructions
+## Deployment Instructions
 
 ### Step 1 — Configure AWS credentials
 
@@ -208,7 +208,7 @@ terraform output eventbridge_rule_arn
 
 ---
 
-## 🧪 Testing with Stratus Red Team
+## Testing with Stratus Red Team
 
 [Stratus Red Team](https://stratus-red-team.cloud/) is an open-source adversary simulation tool for cloud environments developed by Datadog Security Labs.
 
@@ -225,7 +225,7 @@ stratus warmup aws.credential-access.access-key-leak
 stratus detonate aws.credential-access.access-key-leak
 ```
 
-> **⚠️ Warning**: `stratus detonate` creates a *real* IAM user and access key in your account. GuardDuty will detect the leak within 15 minutes (per the configured finding frequency). The Lambda will then automatically deactivate the key and freeze the user.
+> **Warning**: `stratus detonate` creates a *real* IAM user and access key in your account. GuardDuty will detect the leak within 15 minutes (per the configured finding frequency). The Lambda will then automatically deactivate the key and freeze the user.
 
 After detonation, verify remediation:
 
@@ -318,7 +318,7 @@ aws iam delete-user --user-name soar-test-user
 
 ---
 
-## 🔒 Incident Response Playbook
+## Incident Response Playbook
 
 ### Automated Actions (Lambda — completes in < 5 seconds)
 
@@ -361,7 +361,7 @@ aws cloudtrail lookup-events \
 
 ---
 
-## 🛡️ Security Controls Implemented
+## Security Controls Implemented
 
 | Control | Implementation | CIS Benchmark |
 |---------|---------------|---------------|
@@ -374,7 +374,7 @@ aws cloudtrail lookup-events \
 
 ---
 
-## 💰 Cost Estimate
+## Cost Estimate
 
 > Estimated for a **dev/portfolio** account with minimal activity.
 
@@ -390,7 +390,7 @@ aws cloudtrail lookup-events \
 
 ---
 
-## 🧹 Cleanup
+## Cleanup
 
 Destroy all AWS resources created by this lab:
 
