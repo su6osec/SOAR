@@ -1,4 +1,4 @@
-# Cloud Threat Detection and Incident Response (SOAR Lab)
+# AWS SOAR Pipeline
 
 [![Terraform](https://img.shields.io/badge/Terraform-≥1.6-7B42BC?logo=terraform&logoColor=white)](https://www.terraform.io/)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
