@@ -37,8 +37,7 @@
 │                                  │  1. Parse finding      │           │
 │                                  │  2. Deactivate key     │──► IAM    │
 │                                  │  3. Attach DenyAll     │           │
-│                                  │  4. Send Slack alert   │──► Slack  │
-│                                  │  5. Log to CW Logs     │           │
+│                                  │  4. Log to CW Logs     │           │
 │                                  │                        │           │
 │                                  └────────────────────────┘           │
 │                                           │                            │
@@ -49,15 +48,6 @@
 │                                  └────────────────────┘               │
 └─────────────────────────────────────────────────────────────────────────┘
 
-External:
-  ┌──────────────────────────────────────┐
-  │  Slack Channel: #security-alerts     │
-  │  Rich Block Kit incident card with:  │
-  │  • Finding type & severity           │
-  │  • Affected username & masked key    │
-  │  • Actions taken                     │
-  │  • Required human follow-up steps    │
-  └──────────────────────────────────────┘
 ```
 
 ### Data Flow Summary
@@ -70,8 +60,7 @@ External:
 | 4 | Lambda invoked synchronously with finding JSON payload | EventBridge → Lambda |
 | 5 | Access Key status → `Inactive` | Lambda → IAM API |
 | 6 | `ExplicitDenyAll` inline policy attached to IAM user | Lambda → IAM API |
-| 7 | Incident alert POSTed to Slack Incoming Webhook | Lambda → Slack HTTPS |
-| 8 | Structured JSON log emitted | Lambda → CloudWatch Logs |
+| 7 | Structured JSON log emitted | Lambda → CloudWatch Logs |
 
 ---
 
@@ -108,7 +97,7 @@ SOAR/
 ├── outputs.tf                 # Key resource ARNs exposed post-deploy
 ├── terraform.tfvars.example   # Safe-to-commit variable template
 ├── src/
-│   └── remediate.py           # Lambda handler (boto3 remediation + Slack alert)
+│   └── remediate.py           # Lambda handler (boto3 remediation logic)
 └── README.md                  # This file
 ```
 
@@ -122,7 +111,6 @@ SOAR/
 | AWS CLI | ≥ 2.x | [docs.aws.amazon.com/cli](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html) |
 | Python | ≥ 3.10 | [python.org](https://www.python.org/downloads/) |
 | Stratus Red Team | Latest | `brew install datadog/stratus-red-team/stratus-red-team` |
-| Slack Workspace | — | Create an [Incoming Webhook](https://api.slack.com/messaging/webhooks) |
 
 **AWS Permissions Required** (for the deploying IAM principal):
 
@@ -171,8 +159,6 @@ Edit `terraform.tfvars` with your values:
 
 ```hcl
 aws_region        = "us-east-1"
-slack_webhook_url = "https://hooks.slack.com/services/YOUR/REAL/TOKEN"
-slack_channel     = "#security-alerts"
 environment       = "dev"
 owner             = "your-name"
 ```
@@ -340,13 +326,12 @@ aws iam delete-user --user-name soar-test-user
 |---|--------|-------------|---------|
 | 1 | Deactivate compromised key | `iam:UpdateAccessKey(Status=Inactive)` | Key can no longer authenticate API calls |
 | 2 | Freeze IAM user | `iam:PutUserPolicy(ExplicitDenyAll)` | ALL API calls by this user are blocked |
-| 3 | Alert security team | HTTPS POST to Slack Webhook | Incident card in `#security-alerts` |
-| 4 | Log incident | `logs:PutLogEvents` | Structured JSON in CloudWatch for audit |
+| 3 | Log incident | `logs:PutLogEvents` | Structured JSON in CloudWatch for audit |
 
 ### Human Analyst Actions (Post-Automation)
 
 **Immediate (0–30 minutes):**
-- [ ] Acknowledge the Slack alert and assign incident owner
+- [ ] Review the CloudWatch log for the remediation summary
 - [ ] Open GuardDuty finding in AWS Console and read the full finding details
 - [ ] Pull CloudTrail logs for the affected IAM user for the 24 hours preceding the finding
 
@@ -383,7 +368,6 @@ aws cloudtrail lookup-events \
 | Threat Detection | GuardDuty with S3, K8s, and Malware Protection | CIS AWS 3.x |
 | Automated Response | Lambda + EventBridge (MTTR < 60 seconds) | NIST CSF RS.RP |
 | Least Privilege | IAM inline policy with 4 specific actions | CIS IAM 1.x |
-| Sensitive Secret Handling | Slack URL in Lambda env var, marked sensitive in TF | — |
 | Log Retention | 30-day CloudWatch Logs retention | CIS AWS 3.10 |
 | Idempotency | All remediation actions are re-runnable safely | — |
 | Non-repudiation | Structured JSON logs with finding ID + masked key | SOC 2 CC7.2 |
