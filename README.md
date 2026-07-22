@@ -6,13 +6,13 @@
 [![MITRE ATT&CK](https://img.shields.io/badge/MITRE%20ATT%26CK-T1078%20%7C%20T1530-red)](https://attack.mitre.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-> **Portfolio Project** — A production-grade, fully automated Security Orchestration, Automation & Response (SOAR) pipeline on AWS that detects compromised IAM credentials via GuardDuty and autonomously remediates them within seconds — with zero human intervention required for initial containment.
+> **Portfolio Project** — An enterprise-grade, serverless Security Orchestration, Automation, and Response (SOAR) pipeline built on AWS. This architecture autonomously detects compromised IAM credentials via GuardDuty, isolates threats by instantly freezing compromised principals via Lambda, and generates structured security audit logs—achieving zero-trust containment within seconds.
 
 ---
 
 ## System Architecture
 
-![SOAR Architecture Diagram](assets/architecture.png)
+![SOAR Architecture Diagram](assets/architecture_wide.png)
 
 ### Data Flow Summary
 
