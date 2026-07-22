@@ -12,43 +12,7 @@
 
 ## System Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                          AWS Account                                    │
-│                                                                         │
-│  ┌──────────────┐    findings     ┌─────────────────────────────────┐  │
-│  │              │ ──────────────► │                                 │  │
-│  │  GuardDuty   │                 │    Amazon EventBridge           │  │
-│  │  Detector    │  (every 15 min  │    (default event bus)          │  │
-│  │              │   or on update) │                                 │  │
-│  └──────────────┘                 │  Rule: source=aws.guardduty     │  │
-│         │                        │  detail.type=                   │  │
-│    Monitors:                     │  UnauthorizedAccess:IAMUser/     │  │
-│    • CloudTrail                  │  AccessKeyLeak                  │  │
-│    • VPC Flow Logs               │                                 │  │
-│    • DNS Logs                    └────────────┬────────────────────┘  │
-│    • S3 Data Events                           │ invoke                 │
-│    • K8s Audit Logs                           ▼                        │
-│                                  ┌────────────────────────┐           │
-│                                  │                        │           │
-│                                  │   AWS Lambda           │           │
-│                                  │   remediate.py         │           │
-│                                  │                        │           │
-│                                  │  1. Parse finding      │           │
-│                                  │  2. Deactivate key     │──► IAM    │
-│                                  │  3. Attach DenyAll     │           │
-│                                  │  4. Log to CW Logs     │           │
-│                                  │                        │           │
-│                                  └────────────────────────┘           │
-│                                           │                            │
-│                                           ▼                            │
-│                                  ┌────────────────────┐               │
-│                                  │ CloudWatch Logs     │               │
-│                                  │ (structured JSON)   │               │
-│                                  └────────────────────┘               │
-└─────────────────────────────────────────────────────────────────────────┘
-
-```
+![SOAR Architecture Diagram](assets/architecture.png)
 
 ### Data Flow Summary
 
