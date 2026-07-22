@@ -1,4 +1,6 @@
-# Cloud Threat Detection & Incident Response — SOAR Lab
+<div align="center">
+
+# ☁️ Cloud Threat Detection & Incident Response (SOAR Lab)
 
 [![Terraform](https://img.shields.io/badge/Terraform-≥1.6-7B42BC?logo=terraform&logoColor=white)](https://www.terraform.io/)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
@@ -10,51 +12,64 @@
 
 ---
 
-## System Architecture
+### System Architecture
 
 ![SOAR Architecture Diagram](assets/architecture_wide.png)
 
-### Data Flow Summary
+</div>
+
+<br />
+
+## 🔍 Data Flow Summary
 
 | Step | Event | Technology |
-|------|-------|-----------|
-| 1 | Threat activity detected (API call anomaly, credential exposure) | AWS GuardDuty |
-| 2 | Finding published to EventBridge default bus | GuardDuty → EventBridge |
-| 3 | Event pattern matched: `detail.type = UnauthorizedAccess:IAMUser/AccessKeyLeak` | EventBridge Rule |
-| 4 | Lambda invoked synchronously with finding JSON payload | EventBridge → Lambda |
-| 5 | Access Key status → `Inactive` | Lambda → IAM API |
-| 6 | `ExplicitDenyAll` inline policy attached to IAM user | Lambda → IAM API |
-| 7 | Structured JSON log emitted | Lambda → CloudWatch Logs |
+|:----:|:------|:-----------|
+| **1** | Threat activity detected (API call anomaly, credential exposure) | **AWS GuardDuty** |
+| **2** | Finding published to EventBridge default bus | **GuardDuty → EventBridge** |
+| **3** | Event pattern matched: `detail.type = UnauthorizedAccess:IAMUser/AccessKeyLeak` | **EventBridge Rule** |
+| **4** | Lambda invoked synchronously with finding JSON payload | **EventBridge → Lambda** |
+| **5** | Access Key status → `Inactive` | **Lambda → IAM API** |
+| **6** | `ExplicitDenyAll` inline policy attached to IAM user | **Lambda → IAM API** |
+| **7** | Structured JSON log emitted | **Lambda → CloudWatch Logs** |
 
 ---
 
-## MITRE ATT&CK Cloud Mapping
+## 🎯 MITRE ATT&CK Cloud Mapping
 
 This lab detects and responds to the following ATT&CK techniques:
 
-### T1078.004 — Valid Accounts: Cloud Accounts
+<details>
+<summary><b>T1078.004 — Valid Accounts: Cloud Accounts</b></summary>
+
 - **Tactic**: Initial Access, Persistence, Privilege Escalation, Defense Evasion
 - **Description**: Adversaries may obtain and abuse credentials of cloud accounts to gain initial access or maintain persistence. Compromised IAM Access Keys allow attackers to authenticate as a legitimate user, bypassing MFA and network controls.
 - **Detection**: GuardDuty `UnauthorizedAccess:IAMUser/AccessKeyLeak` — identifies access keys found on public code repositories or used from anomalous geolocations.
 - **Automated Response**: Key deactivated + `ExplicitDenyAll` policy attached within seconds of detection.
+</details>
 
-### T1530 — Data from Cloud Storage Object
+<details>
+<summary><b>T1530 — Data from Cloud Storage Object</b></summary>
+
 - **Tactic**: Collection
 - **Description**: Adversaries may access data from cloud storage (S3) using compromised credentials. With a leaked IAM key, an attacker can enumerate and download S3 buckets before defenders respond.
 - **Detection**: GuardDuty S3 Protection monitors `s3:GetObject`, `s3:ListBuckets` calls from unusual principals/IPs.
 - **Automated Response**: Freezing the IAM user with `ExplicitDenyAll` immediately blocks all S3 API calls, stopping exfiltration mid-stream.
+</details>
 
-### T1580 — Cloud Infrastructure Discovery
+<details>
+<summary><b>T1580 — Cloud Infrastructure Discovery</b></summary>
+
 - **Tactic**: Discovery
 - **Description**: Adversaries may attempt to discover cloud infrastructure (EC2, Lambda, RDS) after gaining initial access with compromised credentials.
 - **Detection**: GuardDuty detects reconnaissance API calls (`ec2:DescribeInstances`, `iam:ListRoles`) from known malicious IPs.
 - **Automated Response**: User freeze blocks all discovery API calls simultaneously.
+</details>
 
 ---
 
-## Project Structure
+## 📁 Project Structure
 
-```
+```text
 SOAR/
 ├── main.tf                    # Core Terraform: all AWS resources
 ├── variables.tf               # Parameterized input variables
@@ -62,12 +77,17 @@ SOAR/
 ├── terraform.tfvars.example   # Safe-to-commit variable template
 ├── src/
 │   └── remediate.py           # Lambda handler (boto3 remediation logic)
-└── README.md                  # This file
+└── README.md                  # This documentation
 ```
 
 ---
 
-## Prerequisites
+## 🚀 Deployment Instructions
+
+<details>
+<summary><b>View Deployment Steps</b></summary>
+
+### Prerequisites
 
 | Tool | Version | Install |
 |------|---------|---------|
@@ -76,36 +96,11 @@ SOAR/
 | Python | ≥ 3.10 | [python.org](https://www.python.org/downloads/) |
 | Stratus Red Team | Latest | `brew install datadog/stratus-red-team/stratus-red-team` |
 
-**AWS Permissions Required** (for the deploying IAM principal):
-
-```
-guardduty:CreateDetector
-guardduty:UpdateDetector
-iam:CreateRole
-iam:PutRolePolicy
-iam:CreatePolicy
-lambda:CreateFunction
-lambda:AddPermission
-events:PutRule
-events:PutTargets
-logs:CreateLogGroup
-logs:PutRetentionPolicy
-```
-
----
-
-## Deployment Instructions
-
 ### Step 1 — Configure AWS credentials
 
 ```bash
 aws configure
-# Or use a named profile:
-export AWS_PROFILE=your-sandbox-profile
-```
-
-Verify you are authenticated to the correct account:
-```bash
+# Verify authentication:
 aws sts get-caller-identity
 ```
 
@@ -119,108 +114,47 @@ cd soar-lab
 cp terraform.tfvars.example terraform.tfvars
 ```
 
-Edit `terraform.tfvars` with your values:
-
-```hcl
-aws_region        = "us-east-1"
-environment       = "dev"
-owner             = "your-name"
-```
-
-### Step 3 — Initialize Terraform
+### Step 3 — Initialize & Apply
 
 ```bash
 terraform init
-```
-
-Expected output:
-```
-Terraform has been successfully initialized!
-```
-
-### Step 4 — Review the plan
-
-```bash
-terraform plan
-```
-
-Review the list of resources to be created (no changes are applied yet). Confirm you see:
-- `aws_guardduty_detector.main`
-- `aws_iam_role.lambda_exec`
-- `aws_iam_role_policy.lambda_inline`
-- `aws_lambda_function.remediate`
-- `aws_cloudwatch_event_rule.guardduty_finding`
-- `aws_cloudwatch_event_target.lambda_target`
-- `aws_lambda_permission.allow_eventbridge`
-- `aws_cloudwatch_log_group.lambda_logs`
-
-### Step 5 — Apply
-
-```bash
 terraform apply
 ```
 
-Type `yes` when prompted. Typical apply time: **~60 seconds**.
-
-Verify the key outputs:
-
-```bash
-terraform output guardduty_detector_id
-terraform output lambda_function_arn
-terraform output eventbridge_rule_arn
-```
+Type `yes` when prompted. Typical apply time is **~60 seconds**.
+</details>
 
 ---
 
-## Testing with Stratus Red Team
+## 🧪 Testing with Stratus Red Team
 
 [Stratus Red Team](https://stratus-red-team.cloud/) is an open-source adversary simulation tool for cloud environments developed by Datadog Security Labs.
+
+<details>
+<summary><b>View Testing Options</b></summary>
 
 ### Option A — Stratus Red Team (Recommended)
 
 ```bash
-# List available AWS IAM attack techniques
-stratus list --platform aws --mitre-attack-tactic credential-access
-
 # Warm up the attack scenario (creates prerequisite resources)
 stratus warmup aws.credential-access.access-key-leak
 
-# Detonate the attack — simulates leaking an IAM Access Key to a public endpoint
+# Detonate the attack (simulates leaking an IAM Access Key to a public endpoint)
 stratus detonate aws.credential-access.access-key-leak
 ```
 
-> **Warning**: `stratus detonate` creates a *real* IAM user and access key in your account. GuardDuty will detect the leak within 15 minutes (per the configured finding frequency). The Lambda will then automatically deactivate the key and freeze the user.
+> **Warning**: `stratus detonate` creates a *real* IAM user and access key in your account. GuardDuty will detect the leak within 15 minutes. The Lambda will automatically deactivate the key and freeze the user.
 
 After detonation, verify remediation:
 
 ```bash
-# Check that the Lambda was invoked
 aws logs tail /aws/lambda/soar-lab-remediate --follow --format short
-
-# Confirm the access key was deactivated
 aws iam list-access-keys --user-name <stratus-created-username>
-
-# Confirm the DenyAll policy was attached
-aws iam list-user-policies --user-name <stratus-created-username>
-
-# Clean up Stratus resources
-stratus cleanup aws.credential-access.access-key-leak
 ```
 
-### Option B — Synthetic GuardDuty Finding via AWS Console
+### Option B — Direct Lambda Test Payload
 
-For a faster test (bypasses the ~15 min GuardDuty aggregation window):
-
-1. Open the [GuardDuty Console](https://console.aws.amazon.com/guardduty)
-2. Navigate to **Settings → Sample findings → Generate sample findings**
-3. GuardDuty will create synthetic findings including `UnauthorizedAccess:IAMUser/AccessKeyLeak`
-4. EventBridge will pick these up and invoke the Lambda within seconds
-
-> **Note**: Sample findings use synthetic usernames and access key IDs. The Lambda will attempt IAM API calls that return `NoSuchEntity` errors for these fake identifiers — this is expected and handled gracefully.
-
-### Option C — Direct Lambda Test Payload
-
-Invoke the Lambda directly with a crafted test event:
+Invoke the Lambda directly to see the execution in seconds:
 
 ```bash
 cat > /tmp/test-event.json << 'EOF'
@@ -238,9 +172,6 @@ cat > /tmp/test-event.json << 'EOF'
     "id": "test-finding-id-001",
     "type": "UnauthorizedAccess:IAMUser/AccessKeyLeak",
     "severity": 8.0,
-    "createdAt": "2025-01-01T12:00:00Z",
-    "updatedAt": "2025-01-01T12:00:00Z",
-    "description": "AWS Access Key credentials for IAM user test-compromised-user were found on the internet.",
     "resource": {
       "resourceType": "AccessKey",
       "accessKeyDetails": {
@@ -259,30 +190,15 @@ aws lambda invoke \
   --payload file:///tmp/test-event.json \
   --cli-binary-format raw-in-base64-out \
   /tmp/lambda-response.json
-
-cat /tmp/lambda-response.json | python3 -m json.tool
 ```
-
-> **Note**: Replace `soar-test-user` with a *real* IAM username in your account (e.g., a dedicated test user). The Lambda will make real IAM API calls.
-
-### Setting Up a Test IAM User
-
-```bash
-# Create a dedicated test user
-aws iam create-user --user-name soar-test-user
-
-# Create an access key for the test user
-aws iam create-access-key --user-name soar-test-user
-
-# After testing, clean up
-aws iam delete-user-policy --user-name soar-test-user --policy-name SOARExplicitDenyAll
-aws iam delete-access-key --user-name soar-test-user --access-key-id <key-id>
-aws iam delete-user --user-name soar-test-user
-```
+</details>
 
 ---
 
-## Incident Response Playbook
+## 🔒 Incident Response Playbook
+
+<details>
+<summary><b>View Analyst Actions</b></summary>
 
 ### Automated Actions (Lambda — completes in < 5 seconds)
 
@@ -294,105 +210,45 @@ aws iam delete-user --user-name soar-test-user
 
 ### Human Analyst Actions (Post-Automation)
 
-**Immediate (0–30 minutes):**
-- [ ] Review the CloudWatch log for the remediation summary
-- [ ] Open GuardDuty finding in AWS Console and read the full finding details
-- [ ] Pull CloudTrail logs for the affected IAM user for the 24 hours preceding the finding
-
-```bash
-# Pull recent CloudTrail events for the compromised user
-aws cloudtrail lookup-events \
-  --lookup-attributes AttributeKey=Username,AttributeValue=<USERNAME> \
-  --start-time $(date -u -d '24 hours ago' '+%Y-%m-%dT%H:%M:%SZ') \
-  --query 'Events[*].{Time:EventTime,Event:EventName,Source:EventSource}' \
-  --output table
-```
-
 **Investigation (30 min – 4 hours):**
-- [ ] Identify all API calls made with the compromised key
-- [ ] Check S3 access logs for any `GetObject` calls (potential data exfiltration)
-- [ ] Check Secrets Manager and SSM Parameter Store access
-- [ ] Identify the source IPs and geolocations of API calls
-- [ ] Determine how the key was leaked (public GitHub repo, CI/CD logs, etc.)
-- [ ] Check for any new IAM users, roles, or policies created by the attacker
+- Identify all API calls made with the compromised key.
+- Check S3 access logs for any `GetObject` calls (potential data exfiltration).
+- Determine how the key was leaked (public GitHub repo, CI/CD logs, etc.).
 
 **Remediation (4–24 hours):**
-- [ ] Permanently delete (not just deactivate) the compromised access key
-- [ ] Remove the `SOARExplicitDenyAll` inline policy after root cause is confirmed
-- [ ] Rotate all other credentials for the affected user
-- [ ] If data exfiltration is confirmed, trigger your Data Breach Response Plan
-- [ ] Implement SCPs to prevent future key exposure (e.g., deny key creation without MFA)
+- Permanently delete (not just deactivate) the compromised access key.
+- Remove the `SOARExplicitDenyAll` inline policy after root cause is confirmed.
+- Implement SCPs to prevent future key exposure (e.g., deny key creation without MFA).
+</details>
 
 ---
 
-## Security Controls Implemented
+## 🛡️ Security Controls Implemented
 
 | Control | Implementation | CIS Benchmark |
 |---------|---------------|---------------|
-| Threat Detection | GuardDuty with S3, K8s, and Malware Protection | CIS AWS 3.x |
-| Automated Response | Lambda + EventBridge (MTTR < 60 seconds) | NIST CSF RS.RP |
-| Least Privilege | IAM inline policy with 4 specific actions | CIS IAM 1.x |
-| Log Retention | 30-day CloudWatch Logs retention | CIS AWS 3.10 |
-| Idempotency | All remediation actions are re-runnable safely | — |
-| Non-repudiation | Structured JSON logs with finding ID + masked key | SOC 2 CC7.2 |
+| **Threat Detection** | GuardDuty with S3, K8s, and Malware Protection | CIS AWS 3.x |
+| **Automated Response** | Lambda + EventBridge (MTTR < 60 seconds) | NIST CSF RS.RP |
+| **Least Privilege** | IAM inline policy with 4 specific actions | CIS IAM 1.x |
+| **Log Retention** | 30-day CloudWatch Logs retention | CIS AWS 3.10 |
+| **Non-repudiation** | Structured JSON logs with finding ID + masked key | SOC 2 CC7.2 |
 
 ---
 
-## Cost Estimate
+<div align="center">
 
-> Estimated for a **dev/portfolio** account with minimal activity.
+## 🧹 Cleanup & Cost
 
-| Service | Free Tier | Typical Monthly Cost |
-|---------|-----------|---------------------|
-| GuardDuty | 30-day free trial | ~$2–$10/month (based on CloudTrail volume) |
-| Lambda | 1M requests free | < $0.01 (minimal invocations) |
-| EventBridge | 1M events free | < $0.01 |
-| CloudWatch Logs | 5GB free | < $0.50 (30-day retention) |
-| **Total** | | **< $15/month** |
-
-> **Tip**: Disable the GuardDuty detector (`enable = false`) when not actively testing to avoid ongoing charges.
-
----
-
-## Cleanup
-
-Destroy all AWS resources created by this lab:
+Estimated for a **dev/portfolio** account: **< $15/month**
 
 ```bash
+# Destroy all AWS resources created by this lab
 terraform destroy
 ```
 
-Type `yes` to confirm. This will:
-- Disable the GuardDuty detector
-- Delete the Lambda function and its IAM role
-- Delete the EventBridge rule and target
-- Delete the CloudWatch Log Group and all logs
+<br/>
 
-> **Note**: `terraform destroy` does NOT delete the test IAM user created manually or via Stratus Red Team. Clean those up separately using the commands in the Testing section.
+**Built as a Security Engineering Portfolio Project**  
+*Infrastructure-as-Code (Terraform) • Python • AWS Automation*
 
----
-
-## 📚 References & Further Reading
-
-- [AWS GuardDuty Finding Types](https://docs.aws.amazon.com/guardduty/latest/ug/guardduty_finding-types-active.html)
-- [GuardDuty EventBridge Integration](https://docs.aws.amazon.com/guardduty/latest/ug/guardduty_findings_cloudwatch.html)
-- [MITRE ATT&CK Cloud Matrix](https://attack.mitre.org/matrices/enterprise/cloud/)
-- [Stratus Red Team - AWS Attacks](https://stratus-red-team.cloud/attack-techniques/AWS/)
-- [AWS Security Incident Response Guide](https://docs.aws.amazon.com/whitepapers/latest/aws-security-incident-response-guide/welcome.html)
-- [AWS IAM Best Practices](https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html)
-- [CIS AWS Foundations Benchmark](https://www.cisecurity.org/benchmark/amazon_web_services)
-
----
-
-## 👤 Author
-
-Built as a security engineering portfolio project demonstrating:
-- Cloud-native SOAR architecture on AWS
-- Infrastructure-as-Code with Terraform
-- Python Lambda development with production-grade error handling
-- MITRE ATT&CK-aligned detection and response engineering
-- Adversary simulation with Stratus Red Team
-
----
-
-*MIT License — free to use and adapt for educational and portfolio purposes.*
+</div>
